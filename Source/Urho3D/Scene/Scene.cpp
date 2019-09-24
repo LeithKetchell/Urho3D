@@ -211,7 +211,7 @@ void Scene::AddReplicationState(NodeReplicationState* state)
 
     // This is the first update for a new connection. Mark all replicated nodes dirty
     for (HashMap<unsigned, Node*>::ConstIterator i = replicatedNodes_.Begin(); i != replicatedNodes_.End(); ++i)
-        state->sceneState_->dirtyNodes_.Push(i->first_);
+        state->sceneState_->dirtyNodes_.Insert(i->first_);
 }
 
 bool Scene::LoadXML(Deserializer& source)
@@ -1156,7 +1156,7 @@ void Scene::MarkReplicationDirty(Node* node)
              i != networkState_->replicationStates_.End(); ++i)
         {
             auto* nodeState = static_cast<NodeReplicationState*>(*i);
-            nodeState->sceneState_->dirtyNodes_.Push(id);
+            nodeState->sceneState_->dirtyNodes_.Insert(id);
         }
     }
 }

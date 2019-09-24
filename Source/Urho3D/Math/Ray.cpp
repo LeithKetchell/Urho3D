@@ -202,6 +202,155 @@ float Ray::HitDistance(const Sphere& sphere) const
         return (-b + dSqrt) / (2.0f * a);
 }
 
+
+    // Calculate the normal in a point on the surface
+// it is a vertical vector in the bases and a vector
+// having the direction of the vector from the axis to the point
+Vector3 GetCylinderNormal (const Vector3& p, float radius, float height)
+{
+	// Point is on one of the bases
+	if (p.x_<radius && p.x_>-radius && p.z_<radius && p.z_>-radius)
+	{
+		double epsilon = 0.00000001;
+		if (p.y_ < height+epsilon && p.y_>height-epsilon){
+			return Vector3::UP;
+		}
+		if (p.y_ < epsilon && p.y_>-epsilon){
+			return Vector3::DOWN;
+		}
+	}
+
+	// Point is on lateral surface
+ 	Vector3 c0 (0, p.y_, 0);
+ 	Vector3 v = (p-c0).Normalized();
+ 	return v;
+}
+
+float Ray::intersectOBB(const BoundingBox& boxbounds, const Matrix3x4& boxXform, Vector3& hitpoint){
+
+    /// Transform ray to local space of box
+    Matrix3x4 inv = boxXform.Inverse();
+    Ray ray=Transformed(inv);
+
+    /// Compute ray/box intersection in box local space
+    float d = ray.HitDistance(boxbounds);
+
+    /// If we hit the box, compute localspace hitpoint and transform it back to worldspace
+    if(d!=M_INFINITY)
+        hitpoint = boxXform * (ray.origin_ + ray.direction_ * d);
+
+    return d;
+
+}
+
+// Calculate intersection with cylinder base having center c = either <0,0,0> or <0,height,0>
+// We do this by calculating the intersection with the Y plane,
+// and then checking if the intersection is within the 2D circle (XZ).
+bool intersectCylinderBase (const Ray& ray, float radius, float height, const Vector3& c, double& dist, Vector3& hitPoint)
+{
+	Vector3 normal = GetCylinderNormal (c, radius, height);
+
+	double D =  -normal.DotProduct(c);
+	double phi = normal.DotProduct(ray.direction_);
+
+	if (phi==0)
+		return false;
+
+	dist = - (normal.DotProduct(ray.origin_)+D) / phi;
+
+	const double epsilon = 0.00000001;
+	if (dist < epsilon)
+		return false;
+
+	Vector3 p  = ray.origin_+dist*ray.direction_;
+	if (p.x_*p.x_+p.z_*p.z_-radius*radius > epsilon)
+		return false;
+
+	hitPoint=p;
+	return true;
+}
+
+
+// Find intersection with infinite cylinder with center in the origin
+// to do that, translate the ray origin so that the center of the bottom base
+// is at the origin, then calculate intersection with the canonical infinite cylinder
+// and check if the ray intersects the lateral surface of the cylinder within our
+// bases, if not check if it's intersecting the bases and if not, it's not intersecting
+// our actual cylinder
+float Ray::intersectCylinder (const Vector3& center, const Vector3& normal, float radius, float height, Vector3& hitPoint)
+{
+
+    /// Compute a suitable rotation from a base vector to the desired direction
+    Quaternion q;
+    q.FromRotationTo(Vector3::UP, normal);
+
+    /// Compute transform from cylinder local space to world space
+    Matrix3x4 mat(center, q, Vector3::ONE);
+
+    /// Compute transform from world space to cylinder local space
+    Matrix3x4 inv=mat.Inverse();
+
+    /// Transform ray from world space to cylinder local space
+    Ray ray = Transformed(inv);
+
+    /// We wish to compute a positive value for t
+    float t;
+
+	// Note the ray origin (transformed into cylinder's local space)
+	Vector3 p0 = ray.origin_;
+
+	// coefficients for the intersection equation
+	// got them mathematically intersecting the line equation with the cylinder equation
+	double a = ray.direction_.x_*ray.direction_.x_+ray.direction_.z_*ray.direction_.z_;
+	double b = ray.direction_.x_*p0.x_ +ray.direction_.z_*p0.z_;
+	double c = p0.x_*p0.x_+p0.z_*p0.z_-radius*radius;
+
+	double delta = b*b - a*c;
+
+	//use epsilon because of computation errors between doubles
+	const double epsilon = 0.00000001;
+
+	// delta < 0 means no intersections
+	if (delta < epsilon)
+		return M_INFINITY;
+
+	// nearest intersection
+	t = (-b - sqrt (delta))/a;
+
+	// t<0 means the intersection is behind the ray origin
+	// which we don't want
+	if (t<=epsilon)
+		return M_INFINITY;
+
+	hitPoint = p0 + t * ray.direction_;
+
+
+	/// check if we intersect one of the cylinder caps (aka bases)
+	if (hitPoint.y_ > height+epsilon || hitPoint.y_ < -epsilon) {
+		double dist;
+		Vector3 hp1, hp2;
+
+        /// Check for intersection with upper cap
+		bool b1 = intersectCylinderBase(ray, radius, height, Vector3(0, height, 0), dist, hp1);
+		if(b1) { t=dist; hitPoint=hp1; }
+
+		/// Check for intersection with lower cap
+		bool b2 = intersectCylinderBase (ray, radius, height, Vector3::ZERO, dist, hp2);
+		if(b2 && dist>epsilon && t>=dist) { t=dist; hitPoint=hp2; }
+
+        /// If there's NO intersection...
+		if(! (b1||b2) )
+            t=M_INFINITY;
+	}
+
+    /// If t is valid, then transform the hitpoint from cylinder space to worldspace
+    if(t!=M_INFINITY)
+        hitPoint = mat * hitPoint;
+
+	return t;
+
+}
+
 float Ray::HitDistance(const Vector3& v0, const Vector3& v1, const Vector3& v2, Vector3* outNormal, Vector3* outBary) const
 {
     // Based on Fast, Minimum Storage Ray/Triangle Intersection by Möller & Trumbore

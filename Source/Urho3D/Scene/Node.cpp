@@ -1730,7 +1730,7 @@ void Node::PrepareNetworkUpdate()
                 if (!nodeState->markedDirty_)
                 {
                     nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.Push(id_);
+                    nodeState->sceneState_->dirtyNodes_.Insert(id_);
                 }
             }
         }
@@ -1754,7 +1754,7 @@ void Node::PrepareNetworkUpdate()
                 if (!nodeState->markedDirty_)
                 {
                     nodeState->markedDirty_ = true;
-                    nodeState->sceneState_->dirtyNodes_.Push(id_);
+                    nodeState->sceneState_->dirtyNodes_.Insert(id_);
                 }
             }
         }
@@ -1789,7 +1789,7 @@ void Node::MarkReplicationDirty()
             if (!nodeState->markedDirty_)
             {
                 nodeState->markedDirty_ = true;
-                nodeState->sceneState_->dirtyNodes_.Push(id_);
+                nodeState->sceneState_->dirtyNodes_.Insert(id_);
             }
         }
     }

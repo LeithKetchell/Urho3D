@@ -27,6 +27,13 @@
 #include "../Container/HashSet.h"
 #include "../Resource/Resource.h"
 
+#include <AngelScript/angelscript.h>
+#include "../AngelScript/Script.h"
+#include "../AngelScript/ScriptFile.h"
+#include "../AngelScript/ScriptInstance.h"
+#include "../IO/Log.h"
+#include "../AngelScript/Addons.h"
+
 class asIScriptContext;
 class asIScriptEngine;
 class asIScriptFunction;
@@ -80,15 +87,18 @@ public:
     bool HasEventHandler(Object* sender, StringHash eventType) const override;
 
     /// Query for a function by declaration and execute if found.
-    bool Execute(const String& declaration, const VariantVector& parameters = Variant::emptyVariantVector, bool unprepare = true);
+    bool Execute(const String& declaration, const VariantVector& parameters = Variant::emptyVariantVector,
+        Variant* functionReturn = nullptr, bool unprepare = true);
     /// Execute a function.
-    bool Execute(asIScriptFunction* function, const VariantVector& parameters = Variant::emptyVariantVector, bool unprepare = true);
+    bool Execute(asIScriptFunction* function, const VariantVector& parameters = Variant::emptyVariantVector,
+        Variant* functionReturn = nullptr, bool unprepare = true);
     /// Query for an object method by declaration and execute if found.
     bool Execute(asIScriptObject* object, const String& declaration, const VariantVector& parameters = Variant::emptyVariantVector,
-        bool unprepare = true);
+        Variant* functionReturn = nullptr, bool unprepare = true);
     /// Execute an object method.
     bool Execute(asIScriptObject* object, asIScriptFunction* method, const VariantVector& parameters = Variant::emptyVariantVector,
-        bool unprepare = true);
+        Variant* functionReturn = nullptr, bool unprepare = true);
+
     /// Add a delay-executed function call, optionally repeating.
     void DelayedExecute
         (float delay, bool repeat, const String& declaration, const VariantVector& parameters = Variant::emptyVariantVector);
@@ -149,6 +159,10 @@ private:
     SharedArrayPtr<unsigned char> loadByteCode_;
     /// Byte code size for asynchronous loading.
     unsigned loadByteCodeSize_{};
+
+    /// Unpack a function or method return value into a Variant
+    void UnpackReturnValue(asIScriptContext* context, asIScriptFunction* FunctionOrMethod, Variant* returnValue);
+
 };
 
 /// Helper class for forwarding events to script objects that are not part of a scene.

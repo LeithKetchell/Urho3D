@@ -113,7 +113,7 @@ void Connection::SendMessage(int msgID, bool reliable, bool inOrder, const unsig
         URHO3D_LOGERROR("Null pointer supplied for network message data");
         return;
     }
-
+    
     VectorBuffer buffer;
     buffer.WriteUByte((unsigned char)msgID);
     buffer.Write(data, numBytes);
@@ -249,14 +249,12 @@ void Connection::SendServerUpdate()
     // Always check the root node (scene) first so that the scene-wide components get sent first,
     // and all other replicated nodes get added to the dirty set for sending the initial state
     unsigned sceneID = scene_->GetID();
-    nodesToProcess_.Push(sceneID);
+    nodesToProcess_.Insert(sceneID);
     ProcessNode(sceneID);
 
     // Then go through all dirtied nodes
-    nodesToProcess_.Insert(0,sceneState_.dirtyNodes_);
-    auto it=nodesToProcess_.Find(sceneID);
-    if(it!=nodesToProcess_.End())
-        nodesToProcess_.Erase(it); // Do not process the root node twice
+    nodesToProcess_.Insert(sceneState_.dirtyNodes_);
+    nodesToProcess_.Erase(sceneID); // Do not process the root node twice
 
     while (nodesToProcess_.Size())
     {
@@ -1138,10 +1136,8 @@ void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& event
 void Connection::ProcessNode(unsigned nodeID)
 {
     // Check that we have not already processed this due to dependency recursion
-    auto it=nodesToProcess_.Find(nodeID);
-    if (it==nodesToProcess_.End())
+    if (!nodesToProcess_.Erase(nodeID))
         return;
-    nodesToProcess_.Erase(it);
 
     // Find replication state for the node
     HashMap<unsigned, NodeReplicationState>::Iterator i = sceneState_.nodeStates_.Find(nodeID);
@@ -1583,11 +1579,11 @@ void Connection::ProcessPackageInfo(int msgID, MemoryBuffer& msg)
 }
 
 String Connection::GetAddress() const {
-    return String(address_->ToString(false /*write port*/));
+    return String(address_->ToString(false /*write port*/)); 
 }
 
 void Connection::SetAddressOrGUID(const SLNet::AddressOrGUID& addr)
-{
+{ 
     delete address_;
     address_ = nullptr;
     address_ = new SLNet::AddressOrGUID(addr);

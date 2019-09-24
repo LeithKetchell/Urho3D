@@ -289,7 +289,7 @@ private:
     /// Pending latest data for not yet received components.
     HashMap<unsigned, PODVector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
-    Vector<unsigned> nodesToProcess_;
+    HashSet<unsigned> nodesToProcess_;
     /// Reusable message buffer.
     VectorBuffer msg_;
     /// Queued remote events.

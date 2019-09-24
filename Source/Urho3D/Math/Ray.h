@@ -89,6 +89,8 @@ public:
     float HitDistance(const Frustum& frustum, bool solidInside = true) const;
     /// Return hit distance to a sphere, or infinity if no hit.
     float HitDistance(const Sphere& sphere) const;
+    float intersectCylinder (const Vector3& center, const Vector3& normal, float radius, float height, Vector3& hitPoint);
+    float intersectOBB(const BoundingBox& boxbounds, const Matrix3x4& boxXform, Vector3& hitpoint);
     /// Return hit distance to a triangle, or infinity if no hit. Optionally return hit normal and hit barycentric coordinate at intersect point.
     float HitDistance(const Vector3& v0, const Vector3& v1, const Vector3& v2, Vector3* outNormal = nullptr, Vector3* outBary = nullptr) const;
     /// Return hit distance to non-indexed geometry data, or infinity if no hit. Optionally return hit normal and hit uv coordinates at intersect point.

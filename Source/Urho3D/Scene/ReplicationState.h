@@ -177,7 +177,7 @@ struct URHO3D_API SceneReplicationState : public ReplicationState
     /// Nodes by ID.
     HashMap<unsigned, NodeReplicationState> nodeStates_;
     /// Dirty node IDs.
-    Vector<unsigned> dirtyNodes_;
+    HashSet<unsigned> dirtyNodes_;
 
     void Clear()
     {
